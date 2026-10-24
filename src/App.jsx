@@ -1,198 +1,406 @@
 import "./App.css";
-import { useState } from "react";
-import {  NavLink } from "react-router-dom";
-import Footer from "./Footer";
+import { useState, useEffect } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import Register from "./Register";
+import HeroBanner from "./components/HeroBanner";
+import { useCart } from "./context/CartContext";
+import { useLanguage } from "./context/LanguageContext";
+import { apiGetProducts } from "./services/api";
+
 export default function App() {
-const[menu,setMenu]=useState(false);
-const[showSearch,setShowSearch]=useState(false);
-const[search,setSearch]=useState("");
-const[back,setBack]=useState(false);
-const Items = [
-  {
-    id: 1,
-    image: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=500&auto=format&fit=crop&q=60",
-    name: "Classic White T-Shirt",
-    description: "Comfortable cotton t-shirt for everyday wear.",
-    price: "$1400.00",
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop&q=60",
-    name: "Men Casual Hoodie",
-    description: "Warm and cozy hoodie for cool weather.",
-    price: "$2500.00",
-  },
-  {
-    id: 3,
-    image: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?w=500&auto=format&fit=crop&q=60",
-    name: "Slim Fit Jeans",
-    description: "Modern slim fit jeans with stretch comfort.",
-    price: "$2800.00",
-  },
-  {
-    id: 4,
-    image: "https://images.unsplash.com/photo-1604702770018-55669959b124?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8ZmFzaGlvbiUyMGdpcmx8ZW58MHx8MHx8fDA%3D",
-    name: "Pink Summer Dress",
-    description: "Cute and comfy dress for sunny days.",
-    price: "$1200.00",
-  },
-  {
-    id: 5,
-    image: "https://plus.unsplash.com/premium_photo-1668485966810-cbd0f685f58f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZmFzaGlvbiUyMGdpcmx8ZW58MHx8MHx8fDA%3D",
-    name: "Trendy Kids Outfit",
-    description: "Stylish set for everyday fun.",
-    price: "$1500.00",
-  },
-  {
-    id: 6,
-    image: "https://images.unsplash.com/photo-1562572159-4efc207f5aff?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8ZmFzaGlvbiUyMGdpcmx8ZW58MHx8MHx8fDA%3D",
-    name: "Casual Play Outfit",
-    description: "Perfect active wear for kids.",
-    price: "$1100.00",
-  },
-  {
-    id: 7,
-    image: "https://images.unsplash.com/photo-1596464716127-f2a82984de30?w=500&auto=format&fit=crop&q=60",
-    name: "Kids Cartoon T-Shirt",
-    description: "Soft cotton t-shirt with fun cartoon print.",
-    price: "$900.00",
-  },
-  {
-    id: 8,
-    image: "https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=500&auto=format&fit=crop&q=60",
-    name: "Cute Summer Dress",
-    description: "Light and colorful dress perfect for summer.",
-    price: "$1200.00",
-  },
-  {
-    id: 9,
-    image: "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=500&auto=format&fit=crop&q=60",
-    name: "Kids Casual Hoodie",
-    description: "Warm and comfy hoodie for cool days.",
-    price: "$1500.00",
-  },
-{
-    id: 10,
-    image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500&auto=format&fit=crop&q=60",
-    name: "Leather Handbag",
-    description: "Premium quality leather handbag with spacious design.",
-    price: "$4000.00",
-  },
-  {
-    id: 11,
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&auto=format&fit=crop&q=60",
-    name: "Classic Wrist Watch",
-    description: "Elegant analog watch perfect for all occasions.",
-    price: "$2500.00",
-  },
-  {
-    id: 12,
-    image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500&auto=format&fit=crop&q=60",
-    name: "Stylish Sunglasses",
-    description: "Trendy UV-protected sunglasses for everyday style.",
-    price: "$1200.00",
-  },
-];
-const FilterItems = Items.filter((item) =>
-  item.name.toLowerCase().includes(search.toLowerCase())
-);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-const showForm=(e)=>{
-e.preventDefault();
-if (menu === false) {
-  setMenu(true);
-}
-else if(menu === true){
- setMenu(false);
-}
-}
-const handleBack=(e)=>{
-e.preventDefault();
-if (back === false) {
-  setBack(true);
-}
-else if(back ===true){
-setBack(false);
-}
-}
-const hadleShowSearch=(e)=>{
-e.preventDefault();
-if(showSearch == false){
-setShowSearch(true);
-}
-}
+  const { totalQuantity, addToCart } = useCart();
+  const { language, setLanguage, t } = useLanguage();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-const displaySearch=()=>{
-  if (search && FilterItems.length > 0) {
-    return FilterItems.map((item) => (
-      <div key={item.id} className="item">
-        <img src={item.image} alt={item.name} />
-        <h3>{item.name}</h3>
-        <p>{item.description}</p>
-        <p>{item.price}</p>
-      </div>
-    ));
-  }
-  else if(search && FilterItems .length ===0){
-    return <p>no item founds</p>
-  }
-}
+  const isHomeOrCategory = ["/", "/men", "/women", "/kids", "/accesories"].includes(location.pathname);
+
+  // Real-time backend search
+  useEffect(() => {
+    const trimmed = search.trim();
+    if (!trimmed) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setSearchLoading(true);
+      apiGetProducts({ search: trimmed, limit: 8 })
+        .then((res) => {
+          setSearchResults(res.products || []);
+          setSearchLoading(false);
+        })
+        .catch(() => {
+          setSearchResults([]);
+          setSearchLoading(false);
+        });
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   return (
-    <>
-     
-        <div className="container">
-        <header>
-          <h1>Big Sales</h1>
-           <div className="register">
-            <p>{<Register/>}</p>
-           </div>
-           <div className="menu">
-            <img src="https://cdn-icons-png.flaticon.com/512/1828/1828859.png" alt="menu icon" onClick={showForm}/>
-             {menu &&
-              <div className="menu-items">
-              <NavLink to="/setting">setting</NavLink>
-              <NavLink to="/cart">cart</NavLink>
-              <NavLink to="/men">Mens</NavLink>
-              <NavLink to="/women">Womens</NavLink>
-              <NavLink to="/kids">kids</NavLink>
-              <NavLink to="/accesories">accesories</NavLink>
+    <div style={{ width: "100%", minHeight: "100vh", display: "flex", flexDirection: "column", background: "#f8fafc" }}>
+      {/* Top Banner & Header */}
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 1000,
+          background: "linear-gradient(135deg, #e42f2f 0%, #b91c1c 100%)",
+          color: "white",
+          boxShadow: "0 4px 20px rgba(185, 28, 28, 0.25)",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1280px",
+            margin: "0 auto",
+            padding: "12px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
+            flexWrap: "wrap",
+          }}
+        >
+          {/* Brand Logo */}
+          <NavLink
+            to="/"
+            style={{
+              textDecoration: "none",
+              color: "white",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            <div
+              style={{
+                width: "42px",
+                height: "42px",
+                background: "white",
+                borderRadius: "10px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "22px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              }}
+            >
+              🛍️
             </div>
-             }
-           </div>
-        </header>
-          <nav>
-            <div className="link">
-              <NavLink to="/women">women</NavLink> 
-              <NavLink to="/men">men</NavLink>
-              <NavLink to="/kids">kids</NavLink>
-              <NavLink to="/accesories">accesories</NavLink>
-             
+            <div>
+              <span style={{ fontSize: "22px", fontWeight: "800", letterSpacing: "-0.5px", display: "block", lineHeight: "1.1" }}>
+                Big Sales
+              </span>
+              <span style={{ fontSize: "11px", opacity: 0.9, fontWeight: "500", letterSpacing: "0.5px" }}>
+                The Thrift-flip Store
+              </span>
             </div>
-          </nav>
+          </NavLink>
 
-           <div className="cart-container">
-          <button onClick={handleBack}><NavLink  to="/cart"> <img src="https://cdn-icons-png.flaticon.com/512/263/263142.png" alt="cart icon" /></NavLink> {" "}</button>
-          <button onClick={hadleShowSearch}><img src="https://cdn-icons-png.flaticon.com/512/622/622669.png" alt="search icon" /></button>
-         {showSearch &&
-         <form action="#">
-            <input type="text" placeholder="enter something to search"
-            value={search} onChange={(e)=>setSearch(e.target.value)}/>
-          </form>
-          
-         } 
-        
-        {back &&
-         <div className="home">
-                <button onClick={<App/>}><NavLink to="/">Back</NavLink></button> 
-         </div>}
-         <p className="filter">{displaySearch()}</p>
-         
+          {/* Search Bar */}
+          <div style={{ flex: "1", maxWidth: "420px", position: "relative", minWidth: "220px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                background: "rgba(255, 255, 255, 0.2)",
+                backdropFilter: "blur(4px)",
+                borderRadius: "24px",
+                padding: "6px 14px",
+                border: "1px solid rgba(255, 255, 255, 0.3)",
+              }}
+            >
+              <span style={{ fontSize: "16px", marginRight: "8px", opacity: 0.85 }}>🔍</span>
+              <input
+                type="text"
+                placeholder={t("searchPlaceholder")}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setIsSearchOpen(true);
+                }}
+                onFocus={() => setIsSearchOpen(true)}
+                style={{
+                  width: "100%",
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "white",
+                  fontSize: "14px",
+                }}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setIsSearchOpen(false);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "white",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    opacity: 0.8,
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Live Search Results Dropdown */}
+            {isSearchOpen && search.trim() && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  left: 0,
+                  right: 0,
+                  background: "#ffffff",
+                  borderRadius: "14px",
+                  boxShadow: "0 12px 35px rgba(0,0,0,0.18)",
+                  padding: "12px",
+                  maxHeight: "360px",
+                  overflowY: "auto",
+                  zIndex: 2000,
+                  color: "#0f172a",
+                }}
+              >
+                {searchLoading ? (
+                  <p style={{ textAlign: "center", color: "#64748b", margin: "14px 0", fontSize: "14px" }}>
+                    {t("searching")}
+                  </p>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        addToCart(item);
+                        setIsSearchOpen(false);
+                        setSearch("");
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        padding: "10px",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        transition: "background 0.15s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <img
+                        src={item.image_url || item.image}
+                        alt={item.name}
+                        style={{ width: "45px", height: "45px", objectFit: "cover", borderRadius: "8px" }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: "14px", fontWeight: "700" }}>{item.name}</div>
+                        <div style={{ fontSize: "12px", color: "#e42f2f", fontWeight: "600" }}>
+                          ETB {parseFloat(item.price).toFixed(2)}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        style={{
+                          background: "#e42f2f",
+                          color: "white",
+                          border: "none",
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                        }}
+                      >
+                        + Add
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ textAlign: "center", color: "#64748b", margin: "14px 0", fontSize: "14px" }}>
+                    {t("noItemsFound")}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right Header Controls: Language Switcher, Cart, and Register/Sign In */}
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            {/* Language Switcher */}
+            <div style={{ position: "relative" }}>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.2)",
+                  color: "white",
+                  border: "1px solid rgba(255, 255, 255, 0.35)",
+                  borderRadius: "20px",
+                  padding: "6px 12px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  outline: "none",
+                }}
+              >
+                <option value="en" style={{ color: "#111" }}>🇺🇸 English</option>
+                <option value="es" style={{ color: "#111" }}>🇪🇸 Español</option>
+                <option value="fr" style={{ color: "#111" }}>🇫🇷 Français</option>
+                <option value="it" style={{ color: "#111" }}>🇮🇹 Italiano</option>
+              </select>
+            </div>
+
+            {/* Shopping Cart Button */}
+            <NavLink
+              to="/cart"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "rgba(255, 255, 255, 0.2)",
+                padding: "8px 14px",
+                borderRadius: "24px",
+                textDecoration: "none",
+                color: "white",
+                fontWeight: "700",
+                fontSize: "14px",
+                border: "1px solid rgba(255, 255, 255, 0.35)",
+                position: "relative",
+                transition: "background 0.2s",
+              }}
+            >
+              <span style={{ fontSize: "16px" }}>🛒</span>
+              <span>{t("cartTitle")}</span>
+              {totalQuantity > 0 && (
+                <span
+                  style={{
+                    background: "#ffffff",
+                    color: "#dc2626",
+                    borderRadius: "50%",
+                    width: "20px",
+                    height: "20px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "11px",
+                    fontWeight: "800",
+                    marginLeft: "2px",
+                    boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  {totalQuantity}
+                </span>
+              )}
+            </NavLink>
+
+            {/* User Account / Sign In / Register (Moved to Right as Requested) */}
+            <Register />
+          </div>
         </div>
-       
-      
-        
-        </div>
-    </>
+
+        {/* Secondary Category Navigation */}
+        <nav
+          style={{
+            background: "rgba(0, 0, 0, 0.15)",
+            backdropFilter: "blur(6px)",
+            borderTop: "1px solid rgba(255, 255, 255, 0.15)",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "1280px",
+              margin: "0 auto",
+              padding: "8px 20px",
+              display: "flex",
+              justifyContent: "center",
+              gap: "24px",
+              flexWrap: "wrap",
+            }}
+          >
+            <NavLink
+              to="/men"
+              style={({ isActive }) => ({
+                textDecoration: "none",
+                color: "white",
+                fontWeight: isActive ? "800" : "500",
+                fontSize: "15px",
+                padding: "6px 14px",
+                borderRadius: "20px",
+                background: isActive ? "rgba(255, 255, 255, 0.25)" : "transparent",
+                transition: "all 0.2s",
+              })}
+            >
+              👔 {t("men")}
+            </NavLink>
+            <NavLink
+              to="/women"
+              style={({ isActive }) => ({
+                textDecoration: "none",
+                color: "white",
+                fontWeight: isActive ? "800" : "500",
+                fontSize: "15px",
+                padding: "6px 14px",
+                borderRadius: "20px",
+                background: isActive ? "rgba(255, 255, 255, 0.25)" : "transparent",
+                transition: "all 0.2s",
+              })}
+            >
+              👗 {t("women")}
+            </NavLink>
+            <NavLink
+              to="/kids"
+              style={({ isActive }) => ({
+                textDecoration: "none",
+                color: "white",
+                fontWeight: isActive ? "800" : "500",
+                fontSize: "15px",
+                padding: "6px 14px",
+                borderRadius: "20px",
+                background: isActive ? "rgba(255, 255, 255, 0.25)" : "transparent",
+                transition: "all 0.2s",
+              })}
+            >
+              🧸 {t("kids")}
+            </NavLink>
+            <NavLink
+              to="/accesories"
+              style={({ isActive }) => ({
+                textDecoration: "none",
+                color: "white",
+                fontWeight: isActive ? "800" : "500",
+                fontSize: "15px",
+                padding: "6px 14px",
+                borderRadius: "20px",
+                background: isActive ? "rgba(255, 255, 255, 0.25)" : "transparent",
+                transition: "all 0.2s",
+              })}
+            >
+              👜 {t("accessories")}
+            </NavLink>
+          </div>
+        </nav>
+      </header>
+
+      {/* Main Content Area */}
+      <main style={{ flex: 1, padding: "20px 10px" }}>
+        {/* Hero banner shown on shop/category pages */}
+        {isHomeOrCategory && <HeroBanner />}
+      </main>
+    </div>
   );
 }
